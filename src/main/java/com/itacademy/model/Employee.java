@@ -30,6 +30,13 @@ public class Employee {
     @NonNull
     private double salary;
 
+    @Lob
+    private byte[] photo;
+
+    private String photoName;
+
+    private String type;
+
     public Employee(EmployeeDTO employeeDTO) {
         this.name = employeeDTO.getName();
         this.jobType = JobType.valueOf(employeeDTO.getJobType().toUpperCase());

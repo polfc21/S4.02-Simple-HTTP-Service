@@ -6,7 +6,10 @@ import com.itacademy.model.Employee;
 import com.itacademy.model.JobType;
 import com.itacademy.repository.EmployeeRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 
@@ -76,4 +79,31 @@ public class EmployeeServiceImpl implements EmployeeService{
     public void deleteEmployee(Long id) {
         employeeRepository.deleteById(id);
     }
+
+    @Override
+    public EmployeeDTO uploadPhotoEmployee(Long id, MultipartFile file) throws IOException {
+        Optional<EmployeeDTO> employeeDTOOptional = this.getEmployee(id);
+        if (employeeDTOOptional.isPresent()){
+            Employee employee = employeeRepository.findById(id).get();
+            employee.setPhoto(file.getBytes());
+            String photoName = StringUtils.cleanPath(file.getOriginalFilename());
+            employee.setPhotoName(photoName);
+            employee.setType(file.getContentType());
+            employeeRepository.save(employee);
+            return employeeMapper.getEmployeeDTO(employee);
+        }
+        return null;
+    }
+
+    @Override
+    public String getPhotoNameEmployee(Long id) {
+        Optional<EmployeeDTO> employeeDTOOptional = this.getEmployee(id);
+        if (employeeDTOOptional.isPresent()){
+            Employee employee = employeeRepository.findById(id).get();
+            return employeeMapper.getEmployeeDTO(employee).getPhotoName();
+        }
+        return null;
+    }
+
+
 }

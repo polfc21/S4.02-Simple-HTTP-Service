@@ -2,7 +2,6 @@ package com.itacademy.controller;
 
 import com.itacademy.dto.EmployeeDTO;
 import com.itacademy.service.EmployeeServiceImpl;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.json.AutoConfigureJsonTesters;
@@ -12,7 +11,10 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.context.WebApplicationContext;
 
 import java.util.List;
 import java.util.Optional;
@@ -21,6 +23,8 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.BDDMockito.given;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @AutoConfigureJsonTesters
 @WebMvcTest(EmployeeController.class)
@@ -36,11 +40,14 @@ public class EmployeeControllerTest {
     private JacksonTester<List<EmployeeDTO>> jsonEmployeeDTOList;
 
     @Autowired
+    private WebApplicationContext webApplicationContext;
+
+    @Autowired
     private JacksonTester<EmployeeDTO> jsonEmployeeDTO;
 
     @Test
     void testGivenSavedEmployeesWhenGetAllEmployeesThenReturnOK() throws Exception {
-        EmployeeDTO employeeDTO = new EmployeeDTO(1L,"Pol","Junior",1200D);
+        EmployeeDTO employeeDTO = new EmployeeDTO(1L,"Pol","Junior",1200D, null, null);
         List<EmployeeDTO> employeeDTOList = List.of(employeeDTO);
         given(employeeServiceImpl.getAllEmployees()).willReturn(employeeDTOList);
 
@@ -70,7 +77,7 @@ public class EmployeeControllerTest {
     @Test
     void testGivenIdSavedEmployeeWhenGetEmployeeByIdThenReturnOk() throws Exception {
         Long correctId = 1L;
-        EmployeeDTO employeeDTO = new EmployeeDTO(correctId, "Pol", "Junior", 1200D);
+        EmployeeDTO employeeDTO = new EmployeeDTO(correctId, "Pol", "Junior", 1200D, null, null);
         given(employeeServiceImpl.getEmployee(correctId)).willReturn(Optional.of(employeeDTO));
 
         MockHttpServletResponse response = mvc.perform(
@@ -98,7 +105,7 @@ public class EmployeeControllerTest {
     @Test
     void testGivenJobTypeCorrectAndNotEmptyWhenGetEmployeeByJobTypeThenReturnNoContent() throws Exception {
         String correctJob = "junior";
-        List<EmployeeDTO> employeeDTOList = List.of(new EmployeeDTO(1L, "Pol", correctJob, 1200D));
+        List<EmployeeDTO> employeeDTOList = List.of(new EmployeeDTO(1L, "Pol", correctJob, 1200D, null, null));
         given(employeeServiceImpl.getEmployeesByJobType(correctJob)).willReturn(employeeDTOList);
 
         MockHttpServletResponse response = mvc.perform(
@@ -138,7 +145,7 @@ public class EmployeeControllerTest {
 
     @Test
     void testGivenCorrectEmployeeDTOWhenCreateEmployeeThenReturnCreated() throws Exception {
-        EmployeeDTO employeeDTO = new EmployeeDTO(1L,"Pol","Junior",1200D);
+        EmployeeDTO employeeDTO = new EmployeeDTO(1L,"Pol","Junior",1200D, null, null);
         given(employeeServiceImpl.createEmployee(employeeDTO)).willReturn(employeeDTO);
 
         MockHttpServletResponse response = mvc.perform(
@@ -164,7 +171,7 @@ public class EmployeeControllerTest {
     @Test
     void testGivenCorrectEmployeeDTOWhenUpdateEmployeeThenReturnOk() throws Exception {
         Long presentId = 1L;
-        EmployeeDTO employeeDTO = new EmployeeDTO(presentId,"Pol","Junior",1200D);
+        EmployeeDTO employeeDTO = new EmployeeDTO(presentId,"Pol","Junior",1200D, null, null);
         given(employeeServiceImpl.updateEmployee(presentId, employeeDTO)).willReturn(employeeDTO);
 
         MockHttpServletResponse response = mvc.perform(
@@ -184,7 +191,7 @@ public class EmployeeControllerTest {
         MockHttpServletResponse response = mvc.perform(
                 put("/employees/1")
                     .contentType(MediaType.APPLICATION_JSON)
-                    .content(jsonEmployeeDTO.write(new EmployeeDTO(notPresentId,"Null","Null",0D)).getJson()
+                    .content(jsonEmployeeDTO.write(new EmployeeDTO(notPresentId,"Null","Null",0D,null, null)).getJson()
                 )).andReturn().getResponse();
 
         assertThat(response.getStatus(), is(HttpStatus.NOT_FOUND.value()));
@@ -217,5 +224,60 @@ public class EmployeeControllerTest {
         ).andReturn().getResponse();
 
         assertThat(response.getStatus(), is(HttpStatus.BAD_REQUEST.value()));
+    }
+
+    @Test
+    void testGivenCorrectPhotoWhenUploadPhotoByIdThenReturnOk() throws Exception {
+        MockMultipartFile photo
+                = new MockMultipartFile(
+                "photo",
+                "photo",
+                MediaType.TEXT_PLAIN_VALUE,
+                "Hello, World!".getBytes()
+        );
+
+        MockMvc mockMvc
+                = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
+        mockMvc.perform(multipart("/employees/1/photo")
+                .file(photo)
+        ).andExpect(status().isOk());
+    }
+
+    @Test
+    void testGivenIncorrectPhotoWhenUploadPhotoByIdThenReturnBadRequest() throws Exception {
+        MockMvc mockMvc
+                = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
+        mockMvc.perform(multipart("/employees/1/photo")
+        ).andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void testGivenExistentPhotoWhenGetPhotoNameByIdThenReturnOk() throws Exception {
+        Long presentId = 1L;
+        String photoName = "photoTest";
+        given(employeeServiceImpl.getPhotoNameEmployee(presentId)).willReturn(photoName);
+
+        MockHttpServletResponse response = mvc.perform(
+                        get("/employees/1/photo")
+                            .contentType(MediaType.APPLICATION_JSON)
+                        )
+                        .andReturn().getResponse();
+
+        assertThat(response.getStatus(), is(HttpStatus.OK.value()));
+        assertThat(response.getContentAsString(), is(photoName));
+    }
+
+    @Test
+    void testGivenNotExistentPhotoWhenGetPhotoNameByIdThenReturnNoContent() throws Exception {
+        Long notPresentId = 1L;
+        given(employeeServiceImpl.getPhotoNameEmployee(notPresentId)).willReturn(null);
+
+        MockHttpServletResponse response = mvc.perform(
+                        get("/employees/1/photo")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                )
+                        .andReturn().getResponse();
+
+        assertThat(response.getStatus(), is(HttpStatus.NO_CONTENT.value()));
     }
 }

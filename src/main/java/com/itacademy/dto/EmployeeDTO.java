@@ -28,11 +28,17 @@ public class EmployeeDTO {
 
     private Double salary;
 
+    private String photoName;
+
+    private String type;
+
     public EmployeeDTO (Employee employee) {
         this.id = employee.getId();
         this.name = employee.getName();
         this.jobType = employee.getJobType().toString();
         this.salary = employee.getSalary();
+        this.photoName = employee.getPhotoName();
+        this.type = employee.getType();
     }
 
 }

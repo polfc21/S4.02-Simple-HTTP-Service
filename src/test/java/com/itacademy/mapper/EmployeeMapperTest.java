@@ -28,7 +28,7 @@ class EmployeeMapperTest {
 
     @Test
     void testGivenCorrectEmployeeDTOWhenGetEmployeeThenReturnEmployee() {
-        EmployeeDTO employeeDTO = new EmployeeDTO(1L,"Pol","junior", 1200D);
+        EmployeeDTO employeeDTO = new EmployeeDTO(1L,"Pol","junior", 1200D, null, null);
 
         assertThat(this.sut.getEmployee(employeeDTO), is(new Employee(employeeDTO)));
     }

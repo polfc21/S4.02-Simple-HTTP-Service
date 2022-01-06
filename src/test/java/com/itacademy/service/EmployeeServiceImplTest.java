@@ -12,12 +12,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.mock.web.MockMultipartFile;
 
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.*;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 
@@ -105,7 +107,7 @@ public class EmployeeServiceImplTest {
     void testGivenPresentIdWhenUpdateEmployeeThenReturnEmployeeDTOUpdated() {
         long presentId = 0;
         Employee employee = new Employee();
-        EmployeeDTO employeeDTO = new EmployeeDTO(presentId, "Pol","JUNIOR",1200D);
+        EmployeeDTO employeeDTO = new EmployeeDTO(presentId, "Pol","JUNIOR",1200D, null, null);
         EmployeeDTO updatedEmployeeDTO = new EmployeeDTO();
 
         when(sut.getEmployee(presentId)).thenReturn(Optional.of(employeeDTO));
@@ -135,5 +137,57 @@ public class EmployeeServiceImplTest {
         this.sut.deleteEmployee(id);
 
         verify(employeeRepository).deleteById(id);
+    }
+
+    @Test
+    void testGivenCorrectIdWhenUploadPhotoEmployeeThenReturnEmployeeDTO() throws IOException {
+        long presentId = 0;
+        Employee employee = new Employee();
+        EmployeeDTO employeeDTO = new EmployeeDTO(presentId, "Pol","JUNIOR",1200D, null, null);
+        EmployeeDTO updatedEmployeeDTO = new EmployeeDTO();
+        MockMultipartFile photo = new MockMultipartFile("photo", new byte[5]);
+
+        when(sut.getEmployee(presentId)).thenReturn(Optional.of(employeeDTO));
+        when(employeeRepository.findById(presentId)).thenReturn(Optional.of(employee));
+        when(employeeRepository.save(employee)).thenReturn(employee);
+        when(employeeMapper.getEmployeeDTO(employee)).thenReturn(updatedEmployeeDTO);
+
+        assertThat(sut.uploadPhotoEmployee(presentId, photo), is(updatedEmployeeDTO));
+    }
+
+    @Test
+    void testGivenNotPresentIdWhenUploadPhotoEmployeeThenReturnNull() throws IOException {
+        long notPresentId = 0;
+
+        when(sut.getEmployee(notPresentId)).thenReturn(Optional.empty());
+
+        verify(employeeRepository, never()).findById(notPresentId);
+        verify(employeeRepository, never()).save(null);
+        verify(employeeMapper, never()).getEmployeeDTO(null);
+        Assertions.assertNull(this.sut.uploadPhotoEmployee(notPresentId, null));
+    }
+
+    @Test
+    void testGivenPresentIdWhenGetPhotoNameEmployeeThenReturnString() {
+        long presentId = 1L;
+        EmployeeDTO employeeDTO = new EmployeeDTO(presentId,"Pol","Junior",1200D,"photoTest","image/jpeg");
+        Employee employee = new Employee(employeeDTO);
+
+        when(sut.getEmployee(presentId)).thenReturn(Optional.of(employeeDTO));
+        when(employeeRepository.findById(presentId)).thenReturn(Optional.of(employee));
+        when(employeeMapper.getEmployeeDTO(employee)).thenReturn(employeeDTO);
+
+        assertThat(sut.getPhotoNameEmployee(presentId), is(employeeDTO.getPhotoName()));
+    }
+
+    @Test
+    void testGivenNotPresentIdWhenGetPhotoNameEmployeeThenReturnNull() {
+        long notPresentId = 0;
+
+        when(sut.getEmployee(notPresentId)).thenReturn(Optional.empty());
+
+        verify(employeeRepository, never()).findById(notPresentId);
+        verify(employeeMapper, never()).getEmployeeDTO(null);
+        Assertions.assertNull(this.sut.getPhotoNameEmployee(notPresentId));
     }
 }
