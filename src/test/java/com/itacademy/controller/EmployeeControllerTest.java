@@ -280,4 +280,19 @@ public class EmployeeControllerTest {
 
         assertThat(response.getStatus(), is(HttpStatus.NO_CONTENT.value()));
     }
+
+    @Test
+    void testHeadersArePresent() throws Exception {
+        String nameHeader = "IT-Academy-Exercise";
+        String valueHeader = "Simple-service";
+
+        MockHttpServletResponse response = mvc.perform(
+                        get("/employees/all")
+                                .accept(MediaType.APPLICATION_JSON))
+                        .andReturn().getResponse();
+        response.addHeader(nameHeader, valueHeader);
+
+        assertThat(response.getStatus(), is(HttpStatus.NO_CONTENT.value()));
+        assertThat(response.getHeader(nameHeader), is(valueHeader));
+    }
 }
